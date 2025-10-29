@@ -34,6 +34,8 @@
     .small{font-size:12px;color:var(--muted)}
     canvas{width:100%;max-height:420px}
     footer{padding:24px 16px;color:#666;text-align:center;border-top:1px solid #eee;margin-top:28px}
+    footer a{color:#007BFF;text-decoration:none;font-weight:600}
+    footer a:hover{text-decoration:underline}
     @media (max-width:640px){
       .row{grid-template-columns:1fr}
       header{padding:20px 12px}
@@ -104,12 +106,15 @@
   </main>
 
   <footer>
-    Made with ❤️ | <span class="small">© <span id="year"></span></span>
+    <p>Made with passion for retail by 
+      <a href="https://vienphan.github.io/karim-profile/" target="_blank" rel="noopener">Karim Noui</a>.
+    </p>
+    <span class="small">© <span id="year"></span></span>
   </footer>
 
   <script>
-    // ===== CONFIGURATION =====
     const BASE_KEYWORDS = [
+      "Thế Giới Di Động",
       "Nguyễn Kim",
       "Chợ Lớn",
       "Điện Máy Xanh",
@@ -129,8 +134,8 @@
     }
 
     function parseBingCount(text){
-      const s = text.replace(/\s+/g, ' ');
-      const m = s.match(/(?:About\s+)?([\d,._]+)\s+results/i);
+      const lower = text.toLowerCase().replace(/\s+/g, ' ');
+      const m = lower.match(/(?:about\s+)?([\d,._]+)\s+results/i);
       if (!m) return null;
       const num = m[1].replace(/[,_]/g,'');
       const n = Number(num);
@@ -232,7 +237,6 @@
       const ts = new Date();
       document.getElementById('ts').textContent = 'Scanning at ' + ts.toLocaleString();
 
-      // Combine each brand with the extra keyword
       const combined = BASE_KEYWORDS.map(b => `${b} ${extra}`);
       const promises = combined.map(k => scanOne(k));
       const results = await Promise.all(promises);
