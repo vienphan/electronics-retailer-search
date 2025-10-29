@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Keyword Tracker — Electronics Retail Brands</title>
-  <meta name="description" content="Instantly track the number of web results for key retail brands and visualize the data on a chart." />
+  <title>Keyword Combination Tracker — Retail Brands</title>
+  <meta name="description" content="Instantly track combined keyword search results for retail brands and visualize them on a chart." />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -19,6 +19,7 @@
     p.sub{margin:0;color:var(--muted)}
     .card{background:var(--card);border:1px solid #eee;border-radius:16px;padding:16px;margin-top:16px}
     .row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+    input[type=text]{padding:10px 14px;border-radius:999px;border:1px solid #ccc;width:240px;font-size:15px}
     button{appearance:none;border:none;background:var(--brand);color:#fff;border-radius:999px;padding:10px 16px;font-weight:600;cursor:pointer}
     button:disabled{opacity:.6;cursor:not-allowed}
     .stamp{font-size:14px;color:var(--muted)}
@@ -38,25 +39,22 @@
       header{padding:20px 12px}
       .card{padding:12px}
       th,td{padding:10px 8px}
+      input[type=text]{width:100%}
     }
   </style>
 </head>
 <body>
   <header>
     <div class="wrap">
-      <h1>Keyword Tracker (Instant Scan)</h1>
-      <p class="sub">This tool estimates the number of search results for key electronics retailers at the time of scanning, using Bing Search.</p>
+      <h1>Keyword Combination Tracker</h1>
+      <p class="sub">This tool checks how many web results exist for each retailer brand combined with your custom keyword, using Bing Search.</p>
       <div class="card">
         <div class="row">
           <div class="flex">
-            <span class="badge">Source: Bing Search (en-US)</span>
-            <span class="badge">Proxy: r.jina.ai</span>
-            <span class="badge">Chart: Chart.js</span>
-          </div>
-          <div class="flex">
+            <input type="text" id="extraKeyword" placeholder="Enter extra keyword (e.g., Air Conditioner)" />
             <button id="scanBtn">Scan Now</button>
-            <span class="stamp" id="ts">Not yet scanned</span>
           </div>
+          <span class="stamp" id="ts">Not yet scanned</span>
         </div>
       </div>
     </div>
@@ -64,8 +62,8 @@
 
   <main class="wrap">
     <div class="card">
-      <strong>Monitored Keywords</strong>
-      <p class="small">You can modify the list directly in the source code (<code>KEYWORDS</code> variable).</p>
+      <strong>Fixed Brand Keywords</strong>
+      <p class="small">These base brands will automatically combine with your custom keyword.</p>
       <div id="kwList" class="flex" style="margin-top:8px;"></div>
     </div>
 
@@ -74,21 +72,21 @@
       <table id="resultTable" aria-live="polite">
         <thead>
           <tr>
-            <th style="width:40%">Keyword</th>
+            <th style="width:40%">Combined Keyword</th>
             <th>Source</th>
             <th class="num">Result Count</th>
             <th>Status</th>
           </tr>
         </thead>
         <tbody id="tbody">
-          <tr><td colspan="4" class="small">No data yet. Click “Scan Now”.</td></tr>
+          <tr><td colspan="4" class="small">No data yet. Enter a keyword and click “Scan Now”.</td></tr>
         </tbody>
       </table>
     </div>
 
     <div class="card">
       <strong>Visualization</strong>
-      <p class="small">Showing live results from the latest scan.</p>
+      <p class="small">Showing search volume per combined keyword from the latest scan.</p>
       <canvas id="chart"></canvas>
     </div>
 
@@ -96,10 +94,10 @@
       <details>
         <summary><strong>Technical Notes</strong></summary>
         <ul class="small">
-          <li>The proxy <code>r.jina.ai</code> fetches and parses search result pages (SERPs) as plain text to avoid CORS issues. This may break if the provider changes its structure.</li>
-          <li>Bing results are standardized to <code>en-US</code> to ensure a stable “About N results” pattern for parsing.</li>
-          <li>If a query is blocked or fails to parse, it will show <em>Fallback/Blocked</em> status.</li>
-          <li>For accurate and time-filtered data (past hour/day), you should use an official API such as <b>Bing Web Search API</b>, <b>Google Custom Search API</b>, or <b>NewsAPI</b>.</li>
+          <li>The proxy <code>r.jina.ai</code> fetches plain HTML from Bing Search to bypass CORS. May change if the provider updates structure.</li>
+          <li>Language and market are fixed to <code>en-US</code> for stable parsing of “About N results”.</li>
+          <li>If parsing fails, “Fallback/Blocked” will appear.</li>
+          <li>For precise and filtered results, consider <b>Bing Web Search API</b> or <b>Google Custom Search API</b> via a backend service.</li>
         </ul>
       </details>
     </div>
@@ -111,7 +109,7 @@
 
   <script>
     // ===== CONFIGURATION =====
-    const KEYWORDS = [
+    const BASE_KEYWORDS = [
       "Nguyễn Kim",
       "Chợ Lớn",
       "Điện Máy Xanh",
@@ -162,7 +160,7 @@
     function renderKwList(){
       const box = document.getElementById('kwList');
       box.innerHTML = '';
-      KEYWORDS.forEach(k=>{
+      BASE_KEYWORDS.forEach(k=>{
         const span = document.createElement('span');
         span.className = 'badge';
         span.textContent = k;
@@ -223,12 +221,20 @@
     }
 
     async function scanAll(){
+      const extra = document.getElementById('extraKeyword').value.trim();
+      if(!extra){
+        alert("Please enter an extra keyword first.");
+        return;
+      }
+
       const btn = document.getElementById('scanBtn');
       btn.disabled = true; btn.textContent = 'Scanning...';
       const ts = new Date();
       document.getElementById('ts').textContent = 'Scanning at ' + ts.toLocaleString();
 
-      const promises = KEYWORDS.map(k => scanOne(k));
+      // Combine each brand with the extra keyword
+      const combined = BASE_KEYWORDS.map(b => `${b} ${extra}`);
+      const promises = combined.map(k => scanOne(k));
       const results = await Promise.all(promises);
 
       results.sort((a,b)=>b.count - a.count);
